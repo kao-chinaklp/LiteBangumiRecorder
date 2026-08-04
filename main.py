@@ -33,7 +33,7 @@ def main():
             lst = list(map(int, input("请输入目标动画序号（多个用空格分割，超过范围的值无效）：").split()))
 
             for idx in lst:
-                if idx < len(info) or idx <= 0:
+                if idx > len(info) or idx <= 0:
                     continue
 
                 item = info[idx - 1]
@@ -51,7 +51,7 @@ def main():
         elif op == 2:
             cursor = repo.search_all()
             for row in cursor:
-                print(row, end = ', ')
+                print(row)
 
         elif op == 3:
             bgm_name = input("请输入动画名：")
