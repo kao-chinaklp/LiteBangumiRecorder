@@ -15,6 +15,7 @@ def main():
     3. 查询单个动画
     4. 查询标签
     5. 显示所有标签
+    6. 删除动画
     """
 
     while True:
@@ -29,9 +30,12 @@ def main():
             for i, item in enumerate(info):
                 print(f"{i + 1}. {item['name']} ")
 
-            lst = list(map(int, input("请输入目标动画序号（多个用空格分割）：").split()))
+            lst = list(map(int, input("请输入目标动画序号（多个用空格分割，超过范围的值无效）：").split()))
 
             for idx in lst:
+                if idx < len(info) or idx <= 0:
+                    continue
+
                 item = info[idx - 1]
                 repo.add(
                     bgm_id = item["bgm_id"],
@@ -67,6 +71,21 @@ def main():
             for row in tag_list:
                 lst.append(*row)
             print(",".join(lst))
+
+        elif op == 6:
+            anime_name = input("请输入动画名：")
+            lst = repo.search(anime_name)
+            for i ,item in enumerate(lst):
+                print(f"{i + 1}. {item['name']}")
+
+            del_lst = list(map(int, input("相关结果如上，请输入要删除的动画的序号\n（多个用空格分割，超过范围的值无效）：").split()))
+            for idx in del_lst:
+                if idx < len(lst) or idx <= 0:
+                    continue
+
+                item = lst[idx - 1]
+                repo.delete(item["id"])
+                print(f"已删除动画：{item['name']}")
 
 if __name__ == '__main__':
     main()

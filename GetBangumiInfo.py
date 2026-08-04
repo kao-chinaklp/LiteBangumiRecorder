@@ -1,4 +1,3 @@
-import json
 import requests
 
 url = "https://api.bgm.tv/v0/search/subjects"
@@ -6,8 +5,6 @@ url = "https://api.bgm.tv/v0/search/subjects"
 UserAgent = {
     "User-Agent": "kao-chinaklp/BangumiFatch"
 }
-
-# AccessToken = "lR7D3aTR7CNMYe7IP5sPgnLwMw4aAuGolNXzbNRa"
 
 headers = {
     "Content-Type": "application/json",
@@ -46,7 +43,7 @@ def get_bangumi_info(bangumi_name):
             "score": item["rating"]["score"]
         })
 
-    with open("BangumiInfo.json", "w", encoding = "utf-8") as f:
-        json.dump(result, f, ensure_ascii = False, indent = 4)
+    # with open("BangumiInfo.json", "w", encoding = "utf-8") as f:
+    #     json.dump(result, f, ensure_ascii = False, indent = 4)
 
     return result
