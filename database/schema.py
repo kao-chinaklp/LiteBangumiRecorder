@@ -39,6 +39,7 @@ DO UPDATE SET
     date = EXCLUDED.date,
     summary = EXCLUDED.summary,
     score = EXCLUDED.score
+RETURNING id
 """
 
 SEARCH_ANIMATION = """

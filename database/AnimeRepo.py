@@ -15,14 +15,19 @@ class AnimeRepo:
             summary = None,
             score = None,
             date = None):
+
         cursor = self.db.execute(ADD_ANIMATION, (bgm_id, name, name_cn, date, summary, score))
 
-        anime_id = cursor.lastrowid
+        row = cursor.fetchone()
 
-        if not anime_id:
-            # 如果插入失败，说明记录已存在，获取现有记录的ID
+        if row:
+            anime_id = row[0]
+        else:
             cursor = self.db.execute(SEARCH_ANIMATION, (bgm_id,))
-            anime_id = cursor.fetchone()[0]
+            res = cursor.fetchone()
+            if not res:
+                raise RuntimeError(f"Failed to insert or find anime with bgm_id {bgm_id}")
+            anime_id = res[0]
 
         if tags:
             # 删除旧关系

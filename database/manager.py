@@ -55,7 +55,9 @@ class DatabaseManager:
     def execute(self, sql: str, params = ()):
         # 执行单条语句
         cursor = self.conn.execute(sql, params)
-        self.commit()
+        # 只有不返回结果集的语句才立即提交
+        if cursor.description is None:
+            self.commit()
         return cursor
 
     def execute_many(self, sql: str, params = ()):
