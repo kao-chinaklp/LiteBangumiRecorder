@@ -55,8 +55,12 @@ DO UPDATE SET
 RETURNING id
 """
 
-SEARCH_ANIMATION = """
+SEARCH_ANIMATION_BY_ID = """
 SELECT id FROM animation WHERE bgm_id = ?
+"""
+
+SEARCH_ANIMATION_BY_NAME = """
+SELECT id FROM animation WHERE name = ?
 """
 
 DELETE_OLD = """
@@ -78,19 +82,7 @@ INSERT OR IGNORE INTO tag(name)
 VALUES (?)
 """
 
-IF_EXISTS = """
-SELECT 1 FROM animation WHERE id = ?
-"""
-
 DELETE_BY_ID = """
-DELETE FROM animation WHERE id = ?
-"""
-
-GET_ID_BY_NAME = """
-SELECT id FROM animation WHERE name = ?
-"""
-
-DELETE_ANIMATION = """
 DELETE FROM animation WHERE id = ?
 """
 

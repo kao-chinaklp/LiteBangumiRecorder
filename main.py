@@ -1,12 +1,15 @@
-from service.GetBangumiInfo import get_bangumi_info
+from config.loader import load_config
+from service.GetBangumiInfo import get_bangumi_info, set_user_agent
 from database.AnimeRepo import AnimeRepo
 from database.manager import DatabaseManager
 
 
 def main():
-    db = DatabaseManager("anime.db")
+    config = load_config()
+    db = DatabaseManager(config.database.path)
     db.open()
-    repo = AnimeRepo(db)
+    repo = AnimeRepo(db, config)
+    set_user_agent(config.bangumi.user_agent)
 
     cmd = """
     请输入操作序号：
@@ -19,12 +22,21 @@ def main():
     """
 
     while True:
-        op = int(input(cmd))
+        str = input(cmd)
+
+        try:
+            op = int(str)
+            if op < 1 or op > 6:
+                raise ValueError("")
+        except ValueError:
+            print("非法序号！")
+            continue
+
         if op == 1:
             bgm_name = input("请输入动画名字：")
 
             try:
-                info = get_bangumi_info(bgm_name)
+                info = get_bangumi_info(bgm_name, config)
             except TimeoutError as exc:
                 print(f"超时提示：{exc}")
                 continue
@@ -82,17 +94,17 @@ def main():
         elif op == 6:
             anime_name = input("请输入动画名：")
             lst = repo.search(anime_name)
-            for i ,item in enumerate(lst):
-                print(f"{i + 1}. {item['name']}")
+            for i, item in enumerate(lst):
+                print(f"{i + 1}. {item}")
 
             del_lst = list(map(int, input("相关结果如上，请输入要删除的动画的序号\n（多个用空格分割，超过范围的值无效）：").split()))
             for idx in del_lst:
-                if idx < len(lst) or idx <= 0:
+                if idx > len(lst) or idx <= 0:
                     continue
 
                 item = lst[idx - 1]
-                repo.delete(item["id"])
-                print(f"已删除动画：{item['name']}")
+                repo.delete(item)
+                print(f"已删除动画：{item}")
 
 if __name__ == '__main__':
     main()

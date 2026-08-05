@@ -1,17 +1,21 @@
 from rapidfuzz import fuzz
+
+from config.config import Config
 from database.manager import DatabaseManager
-from database.schema import ADD_ANIMATION, SEARCH_ANIMATION, DELETE_OLD, ADD_ANIMATION_TAG, SEARCH_TAG, ADD_TAG, \
-    CLEANUP_UNUSED_TAGS, SEARCH_ALL, SEARCH_ALL_TAG, IF_EXISTS, DELETE_BY_ID, SEARCH_ALL_ANIMATION
+from database.schema import ADD_ANIMATION, DELETE_OLD, ADD_ANIMATION_TAG, SEARCH_TAG, ADD_TAG, \
+    CLEANUP_UNUSED_TAGS, SEARCH_ALL, SEARCH_ALL_TAG, DELETE_BY_ID, SEARCH_ALL_ANIMATION, \
+    SEARCH_ANIMATION_BY_ID, SEARCH_ANIMATION_BY_NAME
 from service.TextNormalize import normalize_title
 
 
 class AnimeRepo:
-    def __init__(self, db: DatabaseManager):
+    def __init__(self, db: DatabaseManager, config: Config):
         self.db = db
         self._choices: list[tuple[int, str]] = []
         self._normalized_choices: list[str] = []
         self._animes = {}
         self._load_cache()
+        self.config = config
 
     def _load_cache(self):
         rows = self.db.execute(SEARCH_ALL_ANIMATION).fetchall()
@@ -57,7 +61,7 @@ class AnimeRepo:
         if row:
             anime_id = row[0]
         else:
-            cursor = self.db.execute(SEARCH_ANIMATION, (bgm_id,))
+            cursor = self.db.execute(SEARCH_ANIMATION_BY_ID, (bgm_id,))
             res = cursor.fetchone()
             if not res:
                 raise RuntimeError(f"Failed to insert or find anime with bgm_id {bgm_id}")
@@ -97,13 +101,13 @@ class AnimeRepo:
 
         return cursor.lastrowid
 
-    def exists(self, anime_id):
-        result = self.db.execute(IF_EXISTS, (anime_id,))
-        return result.fetchone() is not None
+    def delete(self, anime_name):
+        res = self.db.execute(SEARCH_ANIMATION_BY_NAME, (anime_name,)).fetchone()
 
-    def delete(self, anime_id):
-        if not self.exists(anime_id):
-            raise ValueError(f"anime_id {anime_id} does not exist")
+        if len(res) == 0:
+            return
+
+        anime_id = res[0]
 
         self._remove_cached_anime(anime_id)
         self._animes.pop(anime_id, None)
@@ -129,8 +133,13 @@ class AnimeRepo:
         visited = set()
 
         for index, normalized_title in ranked:
+            if anime_name in normalized_title:
+                results.append(self._choices[index][1])
+                visited.add(self._choices[index][0])
+                continue
+
             score = fuzz.ratio(anime_name, normalized_title)
-            if score <= 50:
+            if score <= self.config.search.threshold:
                 continue
 
             anime_id, title = self._choices[index]
