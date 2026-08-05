@@ -23,7 +23,14 @@ def main():
         if op == 1:
             bgm_name = input("请输入动画名字：")
 
-            info = get_bangumi_info(bgm_name)
+            try:
+                info = get_bangumi_info(bgm_name)
+            except TimeoutError as exc:
+                print(f"超时提示：{exc}")
+                continue
+            except RuntimeError as exc:
+                print(f"请求失败：{exc}")
+                continue
 
             print("搜索结果：")
 
