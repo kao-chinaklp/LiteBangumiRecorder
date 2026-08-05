@@ -11,15 +11,14 @@ def main():
     repo = AnimeRepo(db, config)
     set_user_agent(config.bangumi.user_agent)
 
-    cmd = """
-    请输入操作序号：
-    1. 添加新动画
-    2. 查询所有动画
-    3. 查询单个动画
-    4. 查询标签
-    5. 显示所有标签
-    6. 删除动画
-    """
+    cmd = """请输入操作序号：
+1. 添加新动画
+2. 查询所有动画
+3. 查询单个动画
+4. 查询标签
+5. 显示所有标签
+6. 删除动画
+"""
 
     while True:
         str = input(cmd)

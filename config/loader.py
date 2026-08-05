@@ -7,23 +7,16 @@ from .config import (
     SearchConfig,
     BangumiConfig
 )
+from .generator import generate_config
 
-CONFIG_DIR = Path(".")
-
-DEFAULT_CONFIG = CONFIG_DIR / "default.toml"
-USER_CONFIG = CONFIG_DIR / "config.toml"
-
-def init_config():
-    CONFIG_DIR.mkdir(exist_ok=True)
-
-    if not USER_CONFIG.exists():
-        shutil.copy(DEFAULT_CONFIG, USER_CONFIG)
-        print("创建默认配置文件：", USER_CONFIG)
+CONFIG_PATH = Path('./config.toml')
 
 def load_config() -> Config:
-    init_config()
+    if not CONFIG_PATH.exists():
+        generate_config()
+        print("创建默认配置文件：", CONFIG_PATH)
 
-    with USER_CONFIG.open("rb") as f:
+    with open(CONFIG_PATH, 'rb') as f:
         user_data = tomllib.load(f)
 
     return Config(
