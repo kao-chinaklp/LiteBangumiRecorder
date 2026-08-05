@@ -1,4 +1,4 @@
-from GetBangumiInfo import get_bangumi_info
+from service.GetBangumiInfo import get_bangumi_info
 from database.AnimeRepo import AnimeRepo
 from database.manager import DatabaseManager
 

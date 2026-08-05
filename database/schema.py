@@ -29,6 +29,19 @@ CREATE TABLE IF NOT EXISTS animation_tag
 );
 """
 
+SEARCH_ALL_ANIMATION = """
+    SELECT
+    id,
+    bgm_id,
+    name,
+    name_cn,
+    date,
+    summary,
+    score
+    
+    FROM animation
+"""
+
 ADD_ANIMATION = """
 INSERT OR IGNORE INTO animation (bgm_id, name, name_cn, date, summary, score)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -83,27 +96,6 @@ DELETE FROM animation WHERE id = ?
 
 CLEANUP_UNUSED_TAGS = """
 DELETE FROM tag WHERE id NOT IN (SELECT DISTINCT tag_id FROM animation_tag)
-"""
-
-SEARCH_ANIMATION_BY_NAME = """
-SELECT
-animation.id,
-animation.bgm_id,
-animation.name,
-animation.name_cn,
-animation.date,
-animation.summary,
-animation.score,
-
-tag.name
-
-FROM animation
-
-LEFT JOIN animation_tag
-ON animation.id = animation_tag.animation_id
-LEFT JOIN tag
-ON animation_tag.tag_id = tag.id
-WHERE animation.name LIKE ? OR animation.name_cn LIKE ?
 """
 
 SEARCH_ALL = """

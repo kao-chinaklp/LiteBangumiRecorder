@@ -1,11 +1,43 @@
+from rapidfuzz import fuzz
 from database.manager import DatabaseManager
 from database.schema import ADD_ANIMATION, SEARCH_ANIMATION, DELETE_OLD, ADD_ANIMATION_TAG, SEARCH_TAG, ADD_TAG, \
-    CLEANUP_UNUSED_TAGS, SEARCH_ANIMATION_BY_NAME, SEARCH_ALL, SEARCH_ALL_TAG, IF_EXISTS, DELETE_BY_ID
+    CLEANUP_UNUSED_TAGS, SEARCH_ALL, SEARCH_ALL_TAG, IF_EXISTS, DELETE_BY_ID, SEARCH_ALL_ANIMATION
+from service.TextNormalize import normalize_title
 
 
 class AnimeRepo:
     def __init__(self, db: DatabaseManager):
         self.db = db
+        self._choices: list[tuple[int, str]] = []
+        self._normalized_choices: list[str] = []
+        self._animes = {}
+        self._load_cache()
+
+    def _load_cache(self):
+        rows = self.db.execute(SEARCH_ALL_ANIMATION).fetchall()
+        for row in rows:
+            anime_id = row[0]
+            name = row[2]
+            name_cn = row[3]
+
+            self._animes[anime_id] = row[1]
+
+            if name:
+                self._choices.append((anime_id, name))
+                self._normalized_choices.append(normalize_title(name))
+            if name_cn:
+                self._choices.append((anime_id, name_cn))
+                self._normalized_choices.append(normalize_title(name_cn))
+
+    def _remove_cached_anime(self, anime_id):
+        filtered = [
+            (choice, normalized)
+            for choice, normalized in zip(self._choices, self._normalized_choices)
+            if choice[0] != anime_id
+        ]
+
+        self._choices = [choice for choice, _ in filtered]
+        self._normalized_choices = [normalized for _, normalized in filtered]
 
     def add(self,
             bgm_id,
@@ -15,6 +47,8 @@ class AnimeRepo:
             summary = None,
             score = None,
             date = None):
+
+        summary = (summary or "").replace("\r", "").replace("\n", "")
 
         cursor = self.db.execute(ADD_ANIMATION, (bgm_id, name, name_cn, date, summary, score))
 
@@ -39,6 +73,16 @@ class AnimeRepo:
                 # 建立关系
                 self.db.execute(ADD_ANIMATION_TAG, (anime_id, tag_id))
 
+        self._animes[anime_id] = bgm_id
+        self._remove_cached_anime(anime_id)
+
+        if name:
+            self._choices.append((anime_id, name))
+            self._normalized_choices.append(normalize_title(name))
+        if name_cn:
+            self._choices.append((anime_id, name_cn))
+            self._normalized_choices.append(normalize_title(name_cn))
+
         return anime_id
 
     def get_or_create_tag(self, tag):
@@ -61,21 +105,44 @@ class AnimeRepo:
         if not self.exists(anime_id):
             raise ValueError(f"anime_id {anime_id} does not exist")
 
+        self._remove_cached_anime(anime_id)
+        self._animes.pop(anime_id, None)
+
         self.db.execute(DELETE_BY_ID, (anime_id,))
 
     def cleanup_unused_tags(self):
         self.db.execute(CLEANUP_UNUSED_TAGS)
 
     def search(self, anime_name):
-        key = f"%{anime_name}%"
-        cursor = self.db.execute(SEARCH_ANIMATION_BY_NAME, (key, key))
-        
-        rows = cursor.fetchall()
-        
-        if not rows:
-            return ["找不到该动画"]
+        anime_name = normalize_title(anime_name)
 
-        return self._format(rows)
+        if not anime_name or not self._choices:
+            return []
+
+        ranked = sorted(
+            enumerate(self._normalized_choices),
+            key = lambda item: fuzz.ratio(anime_name, item[1]),
+            reverse = True,
+        )
+
+        results = []
+        visited = set()
+
+        for index, normalized_title in ranked:
+            score = fuzz.ratio(anime_name, normalized_title)
+            if score <= 50:
+                continue
+
+            anime_id, title = self._choices[index]
+
+            if anime_id in visited:
+                continue
+
+            visited.add(anime_id)
+
+            results.append(title)
+        
+        return results
 
     def search_all(self):
         cursor = self.db.execute(SEARCH_ALL)
